@@ -57,3 +57,71 @@ def cumSE(data):
 
 
 
+def dgamma(x, shape, rate = None, scale = 1, log = False):
+    """
+    The Gamma distribution with parameters ‘shape’ = a and ‘scale’ = s
+    has density
+
+                   f(x)= 1/(s^a Gamma(a)) x^(a-1) e^-(x/s)
+                   
+    If you want to use a rate, simply pass `scale = 1/rate`
+    """
+    if rate:
+        scale = 1/rate
+    val = stats.gamma.pdf(x, a=shape, loc=0, scale=scale)
+    if log:
+        return np.log(val)
+    else:
+        return val
+
+
+def qgamma(p, shape, rate = None, scale = 1, lower_tail = True):
+    """
+    p: percentile (between 0 and 1)
+    
+    
+    lower_tail: logical; if True (default), probabilities are P[X <= x],
+          otherwise, P[X > x].
+          
+    The Gamma distribution with parameters ‘shape’ = a and ‘scale’ = s
+    has density
+    
+                   f(x)= 1/(s^a Gamma(a)) x^(a-1) e^-(x/s)
+                   
+    If you want to use a rate, simply pass `scale = 1/rate`
+    """
+    if rate:
+        scale = 1/rate
+    if not lower_tail:
+        p = 1 - p
+    val = stats.gamma.ppf(q=p, a=shape, loc=0, scale=scale)
+    return val
+        
+    
+
+
+
+def priorGamma(mode, b, quantile, alpha=0.95):
+    """
+    Searches for appropriate Gamma distribution
+
+    mode: numeric value for mode
+    b: an array of potential rate parameters
+    quantile: a quantile for the Gamma distribution to match `alpha` confidence level
+    alpha: confidence level (usually 0.95)
+
+    Returns (shape, rate)
+    To obtain scale, scale = 1/rate
+    """
+    a = 1 + (mode * b)
+    rate = b
+    quants = qgamma(p = 0.95, shape = a, scale = 1/rate)
+    MIN = np.min(quants)
+    MAX = np.max(quants)
+    if not (MIN <= quantile) and (quantile <= MAX):
+        print(f"Could not find {quantile} within range of quantiles provided by `qgamma`; adjust `b` search space")
+    diff = (quantile - quants)**2
+    i = np.argmin(a=diff)
+    return (a[i], b[i])
+        
+
