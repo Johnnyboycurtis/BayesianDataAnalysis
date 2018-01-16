@@ -53,7 +53,7 @@ def plot(x, y, linestyle='-', color = "#348ABD", title="", xlabel="x", ylabel="y
     
 
 
-def hist(x, bins='doane', xlabel = "X", title = "Histogram",cumulative=False, density=True, color='0.3', edgecolor = 'white', show=True):
+def hist(x, bins='doane', xlabel = "X", ylabel = "Frequency", title = "Histogram",cumulative=False, density=True, color='0.3', edgecolor = 'white', show=True):
     """ Plot Histograms """
     color_choice = _getcolor(color)
     if isinstance(bins, str):
@@ -66,8 +66,9 @@ def hist(x, bins='doane', xlabel = "X", title = "Histogram",cumulative=False, de
         normed = True
         ylabel = "Density"
     else:
+        normed=False
         w = np.ones_like(x)
-        ylabel = "Frequency"
+        #ylabel = "Frequency"
 
     tmp = plt.hist(x, bins=bins, weights=w, cumulative=cumulative, color=color_choice,  edgecolor=edgecolor, normed=normed)
     plt.xticks(fontsize = 12) 

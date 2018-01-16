@@ -56,6 +56,10 @@ def cumSE(data):
     return result
 
 
+######################################################################
+######################## distribution functions ######################
+######################################################################
+
 
 def dgamma(x, shape, rate = None, scale = 1, log = False):
     """
@@ -96,7 +100,153 @@ def qgamma(p, shape, rate = None, scale = 1, lower_tail = True):
         p = 1 - p
     val = stats.gamma.ppf(q=p, a=shape, loc=0, scale=scale)
     return val
-        
+
+
+def pgamma(q, shape, rate = None, scale = 1, lower_tail = True, log = False):
+    """
+    Example:
+        > pgamma(0.3, shape = 2, rate = 2)
+        [1] 0.1219014
+    """
+    if rate is not None:
+        scale = 1/rate
+    p = stats.gamma.cdf(x=q, a=shape, loc=0, scale=scale)
+    if not lower_tail:
+        p = 1-p
+    if log:
+        p = np.log(p)
+    return p
+
+
+def rgamma(n, shape, rate = None, scale = 1):
+    if rate is not None:
+        scale = 1/rate
+    vals = np.random.gamma(shape = shape, scale = scale, size = n)
+    return vals
+
+
+
+
+
+
+def dbinom(x, size, prob, log=False):
+    p = stats.binom.pmf(x, n=size, p=prob, loc=0)
+    if log:
+        p = np.log(p)
+    return p
+
+
+def pbinom(q, size, prob, lower_tail = True, log = False):
+    p = stats.binom.cdf(k=q, n=size, p=prob, loc=0)
+    if not lower_tail:
+        p = 1 - p
+    if log:
+        p = np.log(p)
+    return p
+
+
+def qbinom(p, size, prob, lower_tail = True):
+    """
+    return quantile given a percentile (e.g. p=0.95)
+    """
+    if not lower_tail:
+        p = 1-p
+    q = stats.binom.ppf(q=p, n=size, p=prob, loc=0)
+    return q
+
+
+
+def rbinom(n, size, prob):
+    vals = np.random.binomial(n=n, p=prob, size = size)
+    return vals
+
+
+
+def dbeta(x, shape1, shape2, ncp = 0, log = False):
+    """
+    The Beta distribution with parameters ‘shape1’ = a and ‘shape2’ = b has density
+
+               Gamma(a+b)/(Gamma(a)Gamma(b)) x^(a-1) (1-x)^(b-1)
+
+    for a > 0, b > 0 and 0 <= x <= 1 where the boundary values at x=0
+     or x=1 are defined as by continuity (as limits).
+
+    """
+
+    pdf = stats.beta.pdf(x, a=shape1, b=shape2, loc=ncp, scale=1)
+    return pdf
+
+
+def pbeta(q, shape1, shape2, ncp = 0, lower_tail = True, log = False):
+    p = stats.beta.cdf(x=q, a=shape1, b=shape2, loc=ncp, scale=1)
+    if not lower_tail:
+        p = 1-p
+    if log:
+        p = np.log(p)
+    return p
+
+
+def qbeta(p, shape1, shape2, ncp = 0, lower_tail = True, log = False):
+    if not lower_tail:
+        p = 1-p
+    q = stats.beta.ppf(q=p, a=shape1, b=shape2, loc=ncp, scale=1)
+    if log:
+        q = np.log(q)
+    return q
+
+
+def rbeta(n, shape1, shape2):
+    vals = np.random.beta(a=shape1,b=shape2,size=n)
+    return vals
+
+
+
+
+
+def dexp(x, rate = None, loc = 0, scale = 1, log = False):
+    if rate:
+        scale = 1/rate
+    density = stats.expon.pdf(x, loc=loc, scale=scale)
+    if log:
+        density = np.log(density)
+    return density
+
+
+def pexp(q, rate = None, loc = 0, scale = 1, lower_tail = True, log = False):
+    if rate:
+        scale = 1/rate
+    p = stats.expon.cdf(x=q, loc=loc, scale=scale)
+    if not lower_tail:
+        p = 1-p
+    if log:
+        p = np.log(p)
+    return p
+
+
+def qexp(p, rate = None, loc = 0, scale = 1, lower_tail = True, log = False):
+    if rate:
+        scale = 1/rate
+    if not lower_tail:
+        p = 1-p
+    q = stats.expon.ppf(q=p, loc=loc, scale=scale)
+    if log:
+        q = np.log(q)
+    return q
+
+def rexp(n, rate = None, loc = 0, scale = 1, log = False):
+    if rate:
+        scale = 1/rate
+    vals = np.random.exponential(scale = scale, size = n) + loc
+    if log:
+        vals = np.log(vals)
+    return vals
+
+
+
+######################################################################
+
+
+
     
 
 
@@ -119,9 +269,96 @@ def priorGamma(mode, b, quantile, alpha=0.95):
     MIN = np.min(quants)
     MAX = np.max(quants)
     if not (MIN <= quantile) and (quantile <= MAX):
-        print(f"Could not find {quantile} within range of quantiles provided by `qgamma`; adjust `b` search space")
+        return ValueError(f"Could not find {quantile} within range of quantiles provided by `qgamma`; adjust `b` search space")
     diff = (quantile - quants)**2
     i = np.argmin(a=diff)
     return (a[i], b[i])
         
+
+
+def Poisson_test(x1, x2, alternative = "two-sided"):
+    if (not isinstance(x1, int)) or (not isinstance(x2, int)):
+        print(f"{x1} or {x2} are not integers!")
+    x= [x1, x2]
+    pval = stats.binomial_test(x, sum(x), alternative = alternative)
+    print(f"probability of success: {pval}")
+
+
+
+
+
+def binom_test(x, n=None, p = 0.5, alternative = "greater", conflevel = 0.95):
+    """
+    Exact Binomial Test
+
+    Parameters:
+        x: int or list,array of length 2
+        n: (optional) sum,total observations
+        p: Null Hypothesis, default is 0.5
+        alternative: less, greater or two-sided; default is `greater`
+        conflevel: default is 0.95
+    """
+    def pLower(x, alpha):
+        if (x == 0):  
+            return 0 
+        else:
+            return qbeta(alpha, x, n - x +1)
+    
+    def pUpper(x, alpha):
+        if(x == n):
+            return 1
+        else:
+            return qbeta(1 - alpha, x+1, n-x)
+
+    if isinstance(x, (list, np.ndarray, tuple)):
+        if len(x) == 2:
+            n = sum(x) ## sum the total values
+            x = x[0] ## first value
+        else:
+            return ValueError("len(x) > 2")
+    
+    elif isinstance(x, int) :
+        if n == None:
+            return ValueError("n must be present and n > x")
+    
+    if alternative == "two-sided":
+        relERROR = 1 + 0.00000001
+        d = dbinom(x, n, p)
+        m = n*p
+        if (x == m):
+            pval = 1 
+        elif (x < m):
+            i = np.arange(np.ceil(m), n+1)
+            y = np.sum(dbinom(i, n, p) <= d * relERROR)
+            pval = pbinom(x, n, p) + pbinom(n - y, n, p, lower_tail = False)
+        else:
+            i = np.arange(0, np.floor(m)+1)
+            y = np.sum(dbinom(i, n, p) <= d*relERROR)
+            pval = pbinom(y - 1, n, p) + pbinom(x - 1, n, p, lower_tail = False)
+        alpha = (1 - conflevel)/2
+        CI = (pLower(x, alpha), pUpper(x, alpha))
+        
+    elif (alternative == "less"):
+        pval = pbinom(x, n, p)
+        CI = (0, pUpper(x, 1 - conflevel))
+    
+    elif (alternative == "greater"):
+        pval = pbinom(x - 1, n, p, lower_tail = False)
+        CI = (pLower(x, 1 - conflevel), 1)
+    
+    ESTIMATE = x/n
+
+    result = f"""
+    	Exact binomial test
+
+        number of successes = {x}, number of trials = {n}, p-value = {pval}
+        alternative hypothesis: true probability of success is greater than {p}
+        95 percent confidence interval:
+        {CI}
+        probability of success: {ESTIMATE}
+    """
+    print(result)
+
+    return {'stat':ESTIMATE, 'conf-interval': CI, 'p-val':pval}
+    
 
