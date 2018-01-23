@@ -9,15 +9,19 @@ survival = namedtuple('Survival', ['time', 'censored'], verbose=False) ## set Tr
 
 
 
-class Survival():
-    def __init__(self, times, censored, verbose=False):
-        self.data = [survival(t,d) for t,d in zip(times, censored)]
+class KaplanMeier():
+    def __init__(self, times=None, censored=None, data = None, verbose=False):
+        if data:
+            self.data = data
+        else:
+            self.data = [survival(t,d) for t,d in zip(times, censored)]
         self.estimates = self.KP_estimate(verbose)
 
     def KP_estimate(self, verbose=False):
         ## create bins from non-censored data
         data = self.data
         tmp = list(set([x.time for x in data if x.censored == 0]))
+        tmp.sort()
         a = 0
         bins = []
         
@@ -37,13 +41,19 @@ class Survival():
 
     def __repr__(self):
         est =  self.estimates
-        out = "\n".join([str(i) for i in est])
+        #header = "
+        est_out = "\n".join([str(i) for i in est])
+        #out = header + out
+        out = f"a, b, previously alive, dead, rate \n{est_out}"
         return out
 
-    def plot(self):
+    def plot(self, method = 'step'):
         surv_rates = [x[4] for x in self.estimates]
         time = [x[0] for x in self.estimates]
-        plt.plot(time, surv_rates, "--")
+        if method == 'line':
+            plt.plot(time, surv_rates, "--")
+        elif method == 'step':
+            plt.step(time, surv_rates)
         plt.xlabel("Time")
         plt.ylabel("Survival Rate")
         plt.title("Kaplan-Meier Estimates")
@@ -74,7 +84,7 @@ censored = [0, 0, 0, 1, 0, 1, 0, 1, 1, 0, 0,
             1, 1, 1, 0, 0, 1, 1, 1, 1, 1]
 
 
-surv = Survival(times, censored)
+surv = KaplanMeier(times, censored)
 
 print(surv)
 
